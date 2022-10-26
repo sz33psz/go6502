@@ -128,18 +128,8 @@ func (cpu *CPU) getNextInstruction() uint8 {
 }
 
 func (cpu *CPU) updateNZ(value uint8) {
-	if value == 0 {
-		cpu.Flags.SetZero()
-	} else {
-		cpu.Flags.ClearZero()
-	}
-
-	if value&(1<<7) > 0 {
-		cpu.Flags.SetNegative()
-	} else {
-		cpu.Flags.ClearNegative()
-	}
-
+	cpu.Flags.SetZero(value == 0)
+	cpu.Flags.SetNegative(value&(1<<7) > 0)
 }
 
 func (cpu *CPU) tax() {
@@ -184,11 +174,7 @@ func (cpu *CPU) iny() {
 
 func (cpu *CPU) cmp_imm() {
 	imm := cpu.getNextInstruction()
-	if imm <= cpu.A {
-		cpu.Flags.SetCarry()
-	} else {
-		cpu.Flags.ClearCarry()
-	}
+	cpu.Flags.SetCarry(imm <= cpu.A)
 	cpu.updateNZ(cpu.A)
 }
 

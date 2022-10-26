@@ -7,11 +7,11 @@ func TestFlags(t *testing.T) {
 	if flags.HasCarry() {
 		flagShouldBeCleared(t, "C")
 	}
-	flags.SetCarry()
+	flags.SetCarry(true)
 	if !flags.HasCarry() {
 		flagShouldBeSet(t, "C")
 	}
-	flags.ClearCarry()
+	flags.SetCarry(false)
 	if flags.HasCarry() {
 		flagShouldBeCleared(t, "C")
 	}
@@ -19,19 +19,19 @@ func TestFlags(t *testing.T) {
 	if flags.HasOverflow() {
 		flagShouldBeCleared(t, "V")
 	}
-	flags.SetOverflow()
+	flags.SetOverflow(true)
 	if !flags.HasOverflow() {
 		flagShouldBeSet(t, "V")
 	}
-	flags.ClearOverflow()
+	flags.SetOverflow(false)
 	if flags.HasOverflow() {
 		flagShouldBeCleared(t, "V")
 	}
 
-	flags.SetOverflow()
-	flags.SetNegative()
-	flags.SetCarry()
-	flags.ClearNegative()
+	flags.SetOverflow(true)
+	flags.SetNegative(true)
+	flags.SetCarry(true)
+	flags.SetNegative(false)
 	if !flags.HasOverflow() {
 		flagShouldBeSet(t, "V")
 	}

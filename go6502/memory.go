@@ -13,7 +13,7 @@ type RAM struct {
 }
 
 func (R *RAM) WithinRange(address uint16) bool {
-	return address >= R.addressStart && address < R.addressStart+R.size
+	return address >= R.addressStart && uint32(address) < uint32(R.addressStart)+uint32(R.size)
 }
 
 func (R *RAM) Get(address uint16) uint8 {
@@ -41,6 +41,9 @@ type Memory struct {
 
 func (m *Memory) Get(address uint16) uint8 {
 	for _, entry := range m.entries {
+		// TODO: Refactor memory, so only it is aware about memory mapping
+		// Mapped memory like RAM or Screen should get only "internal" address
+		// Which will be address to get minus mapping address start
 		if entry.WithinRange(address) {
 			return entry.Get(address)
 		}
@@ -54,8 +57,8 @@ func (m *Memory) Set(address uint16, value ...uint8) {
 		for _, entry := range m.entries {
 			if entry.WithinRange(valueAddress) {
 				entry.Set(valueAddress, value[i])
+				break
 			}
-			break
 		}
 	}
 }
@@ -65,5 +68,11 @@ func DefaultMemory() *Memory {
 		entries: []MemoryMapEntry{
 			NewRAM(0, 65535),
 		},
+	}
+}
+
+func NewMemory(entries ...MemoryMapEntry) *Memory {
+	return &Memory{
+		entries: entries,
 	}
 }

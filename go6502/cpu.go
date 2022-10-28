@@ -22,19 +22,33 @@ const (
 	OpDEY = 0x88
 	OpINY = 0xC8
 
+	// Flags basic ops
+	OpCLC = 0x18
+	OpSEC = 0x38
+	OpCLI = 0x58
+	OpSEI = 0x78
+	OpCLV = 0xB8
+	OpCLD = 0xD8
+	OpSED = 0xF8
+
 	// Accumulator
 	OpLDA_imm        = 0xA9
 	OpLDA_zeropage   = 0xA5
 	OpLDA_zeropage_x = 0xB5
+	OpLDA_absolute   = 0xAD
+	OpLDA_absolute_x = 0xBD
+	OpLDA_absolute_y = 0xB9
 	OpSTA_zeropage   = 0x85
 	OpSTA_absolute   = 0x8D
 	OpSTA_zeropage_x = 0x95
 
 	OpCMP_imm = 0xC9
 
+	// X register
 	OpLDX_imm      = 0xA2
 	OpLDX_zeropage = 0xA6
 
+	// Y register
 	OpLDY_imm      = 0xA0
 	OpLDY_zeropage = 0xA4
 )
@@ -60,6 +74,7 @@ func (cpu *CPU) Initialize() {
 }
 
 func (cpu *CPU) Advance() {
+	// Timings will be taken care of later
 	instruction := cpu.getNextInstruction()
 	switch instruction {
 	case OpNOOP:
@@ -83,6 +98,22 @@ func (cpu *CPU) Advance() {
 	case OpINY:
 		cpu.iny()
 
+	// Flag Ops
+	case OpCLC:
+		cpu.clc()
+	case OpSEC:
+		cpu.sec()
+	case OpCLI:
+		cpu.cli()
+	case OpSEI:
+		cpu.sei()
+	case OpCLV:
+		cpu.clv()
+	case OpCLD:
+		cpu.cld()
+	case OpSED:
+		cpu.sed()
+
 	//Compare Accumulator
 	case OpCMP_imm:
 		cpu.cmp_imm()
@@ -94,7 +125,13 @@ func (cpu *CPU) Advance() {
 		cpu.lda_zeropage()
 	case OpLDA_zeropage_x:
 		cpu.lda_zeropage_x()
-	//TODO: other addressing modes
+	case OpLDA_absolute:
+		cpu.lda_absolute()
+	case OpLDA_absolute_x:
+		cpu.lda_absolute_x()
+	case OpLDA_absolute_y:
+		cpu.lda_absolute_y()
+	//TODO: indirect addressing modes
 	//STA
 	case OpSTA_zeropage:
 		cpu.sta_zeropage()
@@ -172,6 +209,34 @@ func (cpu *CPU) iny() {
 	cpu.updateNZ(cpu.Y)
 }
 
+func (cpu *CPU) clc() {
+	cpu.Flags.SetCarry(false)
+}
+
+func (cpu *CPU) sec() {
+	cpu.Flags.SetCarry(true)
+}
+
+func (cpu *CPU) cli() {
+	cpu.Flags.SetInterruptDisable(false)
+}
+
+func (cpu *CPU) sei() {
+	cpu.Flags.SetInterruptDisable(true)
+}
+
+func (cpu *CPU) clv() {
+	cpu.Flags.SetOverflow(false)
+}
+
+func (cpu *CPU) cld() {
+	cpu.Flags.SetDecimal(false)
+}
+
+func (cpu *CPU) sed() {
+	cpu.Flags.SetDecimal(true)
+}
+
 func (cpu *CPU) cmp_imm() {
 	imm := cpu.getNextInstruction()
 	cpu.Flags.SetCarry(imm <= cpu.A)
@@ -191,6 +256,24 @@ func (cpu *CPU) lda_zeropage() {
 
 func (cpu *CPU) lda_zeropage_x() {
 	location := (uint16(cpu.getNextInstruction()) + uint16(cpu.X)) & 0xFF
+	cpu.A = cpu.Memory.Get(location)
+	cpu.updateNZ(cpu.A)
+}
+
+func (cpu *CPU) lda_absolute() {
+	location := uint16(cpu.getNextInstruction()) + uint16(cpu.getNextInstruction())<<8
+	cpu.A = cpu.Memory.Get(location)
+	cpu.updateNZ(cpu.A)
+}
+
+func (cpu *CPU) lda_absolute_x() {
+	location := uint16(cpu.getNextInstruction()) + uint16(cpu.getNextInstruction())<<8 + uint16(cpu.X)
+	cpu.A = cpu.Memory.Get(location)
+	cpu.updateNZ(cpu.A)
+}
+
+func (cpu *CPU) lda_absolute_y() {
+	location := uint16(cpu.getNextInstruction()) + uint16(cpu.getNextInstruction())<<8 + uint16(cpu.Y)
 	cpu.A = cpu.Memory.Get(location)
 	cpu.updateNZ(cpu.A)
 }
@@ -241,5 +324,17 @@ func NewDefaultMemoryCPU() *CPU {
 		S:      0,
 		Flags:  &Flags{0},
 		Memory: DefaultMemory(),
+	}
+}
+
+func NewCPU(memory *Memory) *CPU {
+	return &CPU{
+		A:      0,
+		Y:      0,
+		X:      0,
+		PC:     0,
+		S:      0,
+		Flags:  &Flags{0},
+		Memory: memory,
 	}
 }

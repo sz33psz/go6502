@@ -31,7 +31,7 @@ func main() {
 		screen.SetMapping(i, 0, 0b11111111, 0b00000000)
 	}
 
-	cpu.Memory.Set(0x0000, go6502.OpLDA_imm, 0b00111000)
+	cpu.Memory.Set(0x0000, go6502.OpLDA_imm, 0b00111100)
 	for i := 0; i < go6502.BlocksInLine*8; i++ {
 		addr := 0x0002 + 0x03*i
 		pixelAddress := 0xD960 + i

@@ -51,6 +51,12 @@ const (
 	// Y register
 	OpLDY_imm      = 0xA0
 	OpLDY_zeropage = 0xA4
+
+	// Jumps
+	OpJMP_absolute = 0x4C
+	OpJMP_indirect = 0x6C
+
+	OpJSR_absolute = 0x20
 )
 
 type CPU struct {
@@ -71,6 +77,7 @@ func (cpu *CPU) String() string {
 func (cpu *CPU) Initialize() {
 	resetVector := uint16(cpu.Memory.Get(ResetVectorH))<<8 + uint16(cpu.Memory.Get(ResetVectorL))
 	cpu.PC = resetVector
+	cpu.S = 0xFF
 }
 
 func (cpu *CPU) Advance() {
@@ -153,6 +160,15 @@ func (cpu *CPU) Advance() {
 		cpu.ldy_imm()
 	case OpLDY_zeropage:
 		cpu.ldy_zeropage()
+
+	//Jumps
+	case OpJMP_absolute:
+		cpu.jmp_absolute()
+	case OpJMP_indirect:
+		cpu.jmp_indirect()
+
+	case OpJSR_absolute:
+		cpu.jsr_absolute()
 	}
 
 	println(cpu.String())
@@ -315,13 +331,39 @@ func (cpu *CPU) ldy_zeropage() {
 	cpu.updateNZ(cpu.Y)
 }
 
+func (cpu *CPU) jmp_absolute() {
+	lowerBytes := uint16(cpu.getNextInstruction())
+	higherBytes := uint16(cpu.getNextInstruction()) << 8
+	cpu.PC = higherBytes + lowerBytes
+}
+
+func (cpu *CPU) jmp_indirect() {
+	lowerLocationBytes := uint16(cpu.getNextInstruction())
+	higherLocationBytes := uint16(cpu.getNextInstruction()) << 8
+	location := higherLocationBytes + lowerLocationBytes
+	lowerBytes := uint16(cpu.Memory.Get(location))
+	higherBytes := uint16(cpu.Memory.Get(location+1)) << 8
+	cpu.PC = higherBytes + lowerBytes
+
+}
+
+func (cpu *CPU) jsr_absolute() {
+	lowerBytes := uint16(cpu.getNextInstruction())
+	cpu.Memory.Set(0x0100+uint16(cpu.S), uint8(cpu.PC>>8))
+	cpu.S--
+	cpu.Memory.Set(0x0100+uint16(cpu.S), uint8(cpu.PC))
+	cpu.S--
+	higherBytes := uint16(cpu.getNextInstruction()) << 8
+	cpu.PC = higherBytes + lowerBytes
+}
+
 func NewDefaultMemoryCPU() *CPU {
 	return &CPU{
 		A:      0,
 		Y:      0,
 		X:      0,
 		PC:     0,
-		S:      0,
+		S:      0xFF,
 		Flags:  &Flags{0},
 		Memory: DefaultMemory(),
 	}
@@ -333,7 +375,7 @@ func NewCPU(memory *Memory) *CPU {
 		Y:      0,
 		X:      0,
 		PC:     0,
-		S:      0,
+		S:      0xFF,
 		Flags:  &Flags{0},
 		Memory: memory,
 	}

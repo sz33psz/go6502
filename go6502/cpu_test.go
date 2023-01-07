@@ -2,12 +2,59 @@ package go6502
 
 import "testing"
 
+func TestJMP(t *testing.T) {
+	cpu := NewDefaultMemoryCPU()
+	cpu.Memory.Set(ResetVectorL, 0x00, 0x00)
+
+	cpu.Memory.Set(0x23FF, 0xCA, 0x11) // Store jump address which will be used by Indirect JMP
+
+	cpu.Memory.Set(0x0000, OpJMP_absolute, 0x40, 0x20)
+	cpu.Memory.Set(0x2040, OpJMP_indirect, 0xFF, 0x23)
+	cpu.Initialize()
+	cpu.Advance()
+
+	if cpu.PC != 0x2040 {
+		t.Fatalf("PC after Absolute JMP wasn't changed. Expected %x, got %x", 0x2040, cpu.PC)
+	}
+
+	cpu.Advance()
+
+	if cpu.PC != 0x11CA {
+		t.Fatalf("PC after Indirect JMP wasn't changed. Expected %x, got %x", 0x11CA, cpu.PC)
+	}
+}
+
+func TestJSR(t *testing.T) {
+	cpu := NewDefaultMemoryCPU()
+	cpu.Memory.Set(ResetVectorL, 0xC0, 0x01) // Starting at address 0x01C0
+
+	cpu.Memory.Set(0x01C0, OpJSR_absolute, 0x40, 0x20)
+	cpu.Initialize()
+	cpu.Advance()
+
+	if cpu.PC != 0x2040 {
+		t.Fatalf("PC after JSR wasn't changed. Expected %x, got %x", 0x2040, cpu.PC)
+	}
+
+	if cpu.S != 0xFD {
+		t.Fatalf("S after JSR wasn't changed. Expceted %x, got %x", 0xFD, cpu.S)
+	}
+
+	if cpu.Memory.Get(0x01FF) != 0x01 {
+		t.Fatalf("PCH wasn't pushed to stack. Expected %x, got %x", 0x01, cpu.Memory.Get(0x1FF))
+	}
+
+	if cpu.Memory.Get(0x01FE) != 0xC2 {
+		t.Fatalf("PCH wasn't pushed to stack. Expected %x, got %x", 0xC2, cpu.Memory.Get(0x1FE))
+	}
+}
 func TestAccumulator(t *testing.T) {
 	cpu := NewDefaultMemoryCPU()
 	cpu.Memory.Set(ResetVectorL, 0x00, 0x00)
 	cpu.Memory.Set(0xF0, 0x66) //Some initial value to load
 
 	cpu.Memory.Set(0x0000, OpLDA_zeropage, 0xF0)
+	cpu.Initialize()
 	cpu.Advance()
 	if cpu.A != 0x66 {
 		t.Fatalf("A wasn't loaded from zeropage. Expected %v, got %v", 0x66, cpu.A)

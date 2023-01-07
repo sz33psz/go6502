@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	ScreenWidth  = 160
-	ScreenHeight = 120
+	ScreenWidth  = 320
+	ScreenHeight = 240
 
 	BlockWidth   = 8
 	BlockHeight  = 8
@@ -16,8 +16,8 @@ const (
 
 	PixelsPerByte = 8
 
-	ColorMappingsBytes = 2 * (ScreenWidth * ScreenHeight) / (BlockWidth * BlockHeight) // 600b
-	PixelColorBytes    = ScreenWidth * ScreenHeight / PixelsPerByte                    // 2400b
+	ColorMappingsBytes = 2 * (ScreenWidth * ScreenHeight) / (BlockWidth * BlockHeight) // 2400b
+	PixelColorBytes    = ScreenWidth * ScreenHeight / PixelsPerByte                    // 9600b
 )
 
 type Screen struct {

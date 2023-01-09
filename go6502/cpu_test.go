@@ -142,6 +142,8 @@ func TestRTS(t *testing.T) {
 		t.Fatalf("PC wasn't loaded from stack. Expected %x, got %x", 0xC230, cpu.PC)
 	}
 }
+
+// TODO: Old tests - refactor
 func TestAccumulator(t *testing.T) {
 	cpu := NewDefaultMemoryCPU()
 	cpu.Memory.Set(ResetVectorL, 0x00, 0x00)

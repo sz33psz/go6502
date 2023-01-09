@@ -57,6 +57,16 @@ const (
 	OpJMP_indirect = 0x6C
 
 	OpJSR_absolute = 0x20
+
+	OpRTS = 0x60
+
+	// Stack Operations
+	OpPHA = 0x48
+	OpPHP = 0x08
+
+	OpPLA = 0x68
+
+	OpPLP = 0x28
 )
 
 type CPU struct {
@@ -169,6 +179,18 @@ func (cpu *CPU) Advance() {
 
 	case OpJSR_absolute:
 		cpu.jsr_absolute()
+	case OpRTS:
+		cpu.rts()
+
+	//Stack Ops
+	case OpPHA:
+		cpu.pha()
+	case OpPHP:
+		cpu.php()
+	case OpPLA:
+		cpu.pla()
+	case OpPLP:
+		cpu.plp()
 	}
 
 	println(cpu.String())
@@ -349,12 +371,47 @@ func (cpu *CPU) jmp_indirect() {
 
 func (cpu *CPU) jsr_absolute() {
 	lowerBytes := uint16(cpu.getNextInstruction())
-	cpu.Memory.Set(0x0100+uint16(cpu.S), uint8(cpu.PC>>8))
-	cpu.S--
-	cpu.Memory.Set(0x0100+uint16(cpu.S), uint8(cpu.PC))
-	cpu.S--
+	cpu.push(uint8(cpu.PC >> 8))
+	cpu.push(uint8(cpu.PC))
 	higherBytes := uint16(cpu.getNextInstruction()) << 8
 	cpu.PC = higherBytes + lowerBytes
+}
+
+func (cpu *CPU) rts() {
+	lowerBytes := uint16(cpu.pop())
+	higherBytes := uint16(cpu.pop()) << 8
+	cpu.PC = higherBytes + lowerBytes
+}
+
+func (cpu *CPU) pop() uint8 {
+	cpu.S++
+	return cpu.Memory.Get(cpu.stackPointerAddress())
+}
+
+func (cpu *CPU) push(value uint8) {
+	cpu.Memory.Set(cpu.stackPointerAddress(), value)
+	cpu.S--
+}
+
+func (cpu *CPU) stackPointerAddress() uint16 {
+	return 0x0100 + uint16(cpu.S)
+}
+
+func (cpu *CPU) pha() {
+	cpu.push(cpu.A)
+}
+
+func (cpu *CPU) php() {
+	cpu.push(cpu.Flags.val)
+}
+
+func (cpu *CPU) pla() {
+	cpu.A = cpu.pop()
+	cpu.updateNZ(cpu.A)
+}
+
+func (cpu *CPU) plp() {
+	cpu.Flags.val = cpu.pop()
 }
 
 func NewDefaultMemoryCPU() *CPU {
